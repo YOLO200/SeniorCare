@@ -67,7 +67,7 @@ export default async function Home() {
 
           <div className="space-y-6">
             {/* Recipients List */}
-            <div className="space-y-4">
+            <div className="space-y-4 mb-8">
               {parents && parents.length > 0 ? (
                 parents.map(
                   (parent: {
@@ -91,9 +91,6 @@ export default async function Home() {
                               <h3 className="font-semibold text-slate-800 group-hover:text-violet-700">
                                 {parent.name}
                               </h3>
-                              <p className="text-sm text-slate-600">
-                                {parent.phone_number}
-                              </p>
                             </div>
                           </div>
                           <ChevronRight className="h-5 w-5 text-slate-400 group-hover:text-violet-600" />
