@@ -31,6 +31,7 @@ import { useRouter } from "next/navigation";
 export const reminderSchema = z.object({
   name: z.string().min(1),
   category: z.enum(["Medicine", "Appointment", "Activity"]),
+  delivery_method: z.enum(["text", "call"]),
   hour: z.string(),
   minute: z.string(),
   ampm: z.enum(["AM", "PM"]),
@@ -80,6 +81,7 @@ export default function ReminderForm({
       return {
         name: reminder.name || "",
         category: reminder.category || "Medicine",
+        delivery_method: reminder.delivery_method || "text",
         hour: timeComponents.hour,
         minute: timeComponents.minute,
         ampm: timeComponents.ampm,
@@ -97,6 +99,7 @@ export default function ReminderForm({
     return {
       name: "",
       category: "Medicine",
+      delivery_method: "text",
       hour: "12",
       minute: "00",
       ampm: "AM",
@@ -126,6 +129,7 @@ export default function ReminderForm({
       const reminderData = {
         name: values.name,
         category: values.category,
+        delivery_method: values.delivery_method,
         time,
         monday: values.monday,
         tuesday: values.tuesday,
@@ -197,44 +201,80 @@ export default function ReminderForm({
             </FormItem>
           )}
         />
-        {/* Category */}
-        <FormField
-          control={form.control}
-          name="category"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-sm sm:text-base font-medium">
-                Category
-              </FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger className="text-sm sm:text-base">
-                    <SelectValue />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="Medicine">Medicine</SelectItem>
-                  <SelectItem value="Appointment">Appointment</SelectItem>
-                  <SelectItem value="Activity">Activity</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+
+        {/* Category and Delivery Method */}
+        <div className="grid grid-cols-2 gap-4 sm:gap-6">
+          {/* Category */}
+          <FormField
+            control={form.control}
+            name="category"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-sm sm:text-base font-medium">
+                  Category
+                </FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger className="text-sm sm:text-base">
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="Medicine">Medicine</SelectItem>
+                    <SelectItem value="Appointment">Appointment</SelectItem>
+                    <SelectItem value="Activity">Activity</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Delivery Method */}
+          <FormField
+            control={form.control}
+            name="delivery_method"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-sm sm:text-base font-medium">
+                  Delivery Method
+                </FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger className="text-sm sm:text-base">
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="text">Text Message</SelectItem>
+                    <SelectItem value="call">Phone Call</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
         {/* Time */}
         <div>
           <FormLabel className="text-sm sm:text-base font-medium mb-3 block">
             Reminder Time
           </FormLabel>
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <div className="flex flex-row gap-2 sm:gap-3">
             {["hour", "minute", "ampm"].map((key) => (
               <FormField
                 key={key}
                 control={form.control}
                 name={key as keyof ReminderFormValues}
                 render={({ field }) => (
-                  <FormItem className="flex-1 sm:w-1/3">
+                  <FormItem className="flex-1">
                     <FormControl>
                       <Select
                         onValueChange={field.onChange}

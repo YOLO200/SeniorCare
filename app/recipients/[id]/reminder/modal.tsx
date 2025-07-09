@@ -51,7 +51,7 @@ export default function ReminderModal({
           </DialogTitle>
           <DialogDescription className="text-sm sm:text-base">
             {mode === "add"
-              ? "Create a new reminder for this care recipient. Fill out the form below to set up the reminder details."
+              ? "Fill out the form below to set up the reminder details."
               : "Update the reminder details below."}
           </DialogDescription>
         </DialogHeader>
