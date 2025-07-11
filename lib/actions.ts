@@ -48,22 +48,40 @@ export async function signUp(prevState: any, formData: FormData) {
 
   const email = formData.get("email");
   const password = formData.get("password");
+  const firstName = formData.get("firstName");
+  const lastName = formData.get("lastName");
 
   // Validate required fields
-  if (!email || !password) {
-    return { error: "Email and password are required" };
+  if (!email || !password || !firstName || !lastName) {
+    return { error: "Email, password, first name, and last name are required" };
   }
 
   const supabase = createServerActionClient({ cookies });
 
   try {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: email.toString(),
       password: password.toString(),
     });
 
     if (error) {
       return { error: error.message };
+    }
+
+    // If signup was successful and we have a user, create a profile record
+    if (data.user) {
+      const { error: profileError } = await supabase.from("users").insert({
+        supabase_id: data.user.id,
+        first_name: firstName.toString(),
+        last_name: lastName.toString(),
+        email: email.toString(),
+      });
+
+      if (profileError) {
+        console.error("Profile creation error:", profileError);
+        // Don't fail the signup if profile creation fails, but log it
+        // The user can still sign in and we can handle profile creation later
+      }
     }
 
     return { success: "Check your email to confirm your account." };

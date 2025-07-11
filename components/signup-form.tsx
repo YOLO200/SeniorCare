@@ -120,6 +120,40 @@ export default function SignUpForm() {
 
           <form action={formAction} className="space-y-6">
             <div className="space-y-5">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label
+                    htmlFor="firstName"
+                    className="block text-base text-slate-700"
+                  >
+                    First Name
+                  </label>
+                  <Input
+                    id="firstName"
+                    name="firstName"
+                    type="text"
+                    placeholder="John"
+                    required
+                    className="h-12 sm:h-10 text-base sm:text-sm"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label
+                    htmlFor="lastName"
+                    className="block text-base text-slate-700"
+                  >
+                    Last Name
+                  </label>
+                  <Input
+                    id="lastName"
+                    name="lastName"
+                    type="text"
+                    placeholder="Doe"
+                    required
+                    className="h-12 sm:h-10 text-base sm:text-sm"
+                  />
+                </div>
+              </div>
               <div className="space-y-2">
                 <label
                   htmlFor="email"
