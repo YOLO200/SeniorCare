@@ -4,10 +4,6 @@ import { Button } from "@/components/ui/button";
 import {
   ArrowLeft,
   User,
-  Phone,
-  Clock,
-  Calendar,
-  Plus,
   LogOut,
   Edit,
   MessageSquare,
@@ -15,9 +11,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import ReminderModal from "./reminder/modal";
 import { signOut } from "@/lib/actions";
 import RemindersSection from "./RemindersSection";
+import SummarySection from "./SummarySection";
 
 interface RecipientInfoPageProps {
   params: Promise<{
@@ -83,6 +79,60 @@ export default async function RecipientInfoPage({
     .not("ai_agent_response", "is", null)
     .order("scheduled_time", { ascending: false })
     .limit(10);
+
+  // Get scheduled texts with AI agent responses for this recipient (WITH JOIN)
+  const { data: scheduledTexts } = await supabase
+    .from("scheduled_texts")
+    .select(
+      `
+      *,
+      reminders (
+        name,
+        category,
+        delivery_method
+      )
+    `
+    )
+    .eq("parent_id", id)
+    .not("ai_agent_response", "is", null)
+    .order("scheduled_time", { ascending: false })
+    .limit(10);
+
+  // Debug logging
+  console.log("Page - scheduledTexts query result:", scheduledTexts);
+  console.log("Page - scheduledTexts length:", scheduledTexts?.length);
+  console.log("Page - recipient id:", id);
+  console.log("Page - recipient id type:", typeof id);
+
+  // Also try a simpler query to see if there are any texts at all
+  const { data: allTexts, error: allTextsError } = await supabase
+    .from("scheduled_texts")
+    .select("*")
+    .eq("parent_id", id);
+
+  console.log("Page - allTexts for this recipient:", allTexts);
+  console.log("Page - allTexts error:", allTextsError);
+  console.log("Page - allTexts length:", allTexts?.length);
+
+  // Check for texts with empty string responses (not null)
+  const { data: textsWithEmptyResponse, error: emptyResponseError } =
+    await supabase
+      .from("scheduled_texts")
+      .select("*")
+      .eq("parent_id", id)
+      .eq("ai_agent_response", "");
+
+  console.log("Page - textsWithEmptyResponse:", textsWithEmptyResponse);
+  console.log("Page - emptyResponseError:", emptyResponseError);
+
+  // Try querying with string ID
+  const { data: textsWithStringId, error: stringIdError } = await supabase
+    .from("scheduled_texts")
+    .select("*")
+    .eq("parent_id", id.toString());
+
+  console.log("Page - textsWithStringId:", textsWithStringId);
+  console.log("Page - stringIdError:", stringIdError);
 
   return (
     <div className="min-h-screen bg-white">
@@ -162,118 +212,11 @@ export default async function RecipientInfoPage({
             recipientId={recipient.id}
           />
 
-          {/* Call Notes Section */}
-          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-slate-200">
-            <div className="px-4 sm:px-6 py-4 border-b border-slate-200">
-              <div className="flex items-center space-x-2">
-                <MessageSquare className="h-5 w-5 text-violet-600" />
-                <div>
-                  <h3 className="text-base sm:text-lg font-semibold text-slate-800">
-                    Call Notes
-                  </h3>
-                  <p className="text-xs sm:text-sm text-slate-600">
-                    Summary of AI conversations with care recipients
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 sm:p-6">
-              {scheduledCalls && scheduledCalls.length > 0 ? (
-                <div className="space-y-4">
-                  {scheduledCalls.map((call: any) => (
-                    <div
-                      key={call.id}
-                      className="p-4 bg-slate-50 rounded-lg border border-slate-200"
-                    >
-                      <div className="flex items-start justify-between gap-2 mb-3">
-                        <div className="flex items-center space-x-2">
-                          <PhoneCall className="h-4 w-4 text-violet-600 flex-shrink-0" />
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <p className="font-medium text-slate-800 text-sm">
-                                {call.reminders?.name || "Reminder"}
-                              </p>
-                              {call.status && (
-                                <span
-                                  className={`inline-block px-2 py-1 rounded-lg text-[10px] font-medium ${
-                                    call.status === "completed"
-                                      ? "bg-green-100 text-green-800"
-                                      : call.status === "failed"
-                                      ? "bg-red-100 text-red-800"
-                                      : "bg-yellow-100 text-yellow-800"
-                                  }`}
-                                >
-                                  {call.status}
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-xs text-slate-600">
-                              {call.reminders?.category}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[10px] text-slate-500">
-                            {new Date(call.scheduled_time).toLocaleDateString(
-                              "en-US",
-                              {
-                                month: "numeric",
-                                day: "numeric",
-                                year: "2-digit",
-                              }
-                            )}
-                          </p>
-                          <p className="text-[10px] text-slate-500">
-                            {new Date(call.scheduled_time).toLocaleTimeString(
-                              "en-US",
-                              {
-                                hour: "numeric",
-                                minute: "2-digit",
-                                hour12: true,
-                              }
-                            )}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="bg-white p-3 rounded border border-slate-200">
-                        <p className="text-sm text-slate-700 whitespace-pre-wrap">
-                          {call.ai_agent_response}
-                        </p>
-                      </div>
-
-                      {call.call_attempts > 0 && (
-                        <div className="mt-2 text-xs text-slate-500">
-                          Call attempts: {call.call_attempts}
-                          {call.last_attempt_time && (
-                            <>
-                              {" "}
-                              • Last attempt:{" "}
-                              {new Date(
-                                call.last_attempt_time
-                              ).toLocaleString()}
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-6 sm:py-8">
-                  <MessageSquare className="h-10 w-10 sm:h-12 sm:w-12 text-slate-400 mx-auto mb-3 sm:mb-4" />
-                  <p className="text-slate-600 mb-3 sm:mb-4 text-sm sm:text-base">
-                    No call notes available yet.
-                  </p>
-                  <p className="text-xs sm:text-sm text-slate-500">
-                    Call notes will appear here once scheduled calls with AI
-                    responses are made.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
+          {/* Summary Section */}
+          <SummarySection
+            scheduledCalls={scheduledCalls || []}
+            scheduledTexts={scheduledTexts || []}
+          />
         </div>
       </main>
     </div>
