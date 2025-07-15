@@ -78,7 +78,7 @@ export default function SignUpForm() {
 
   return (
     <div
-      className="w-screen h-screen flex items-center justify-center"
+      className="w-screen h-screen flex items-center justify-center border-0 outline-none"
       style={{
         background:
           "linear-gradient(to bottom right, #DBEAFE, #F1F5F9 50%, #E9D5FF)",
@@ -94,7 +94,7 @@ export default function SignUpForm() {
         </div>
 
         {/* Form */}
-        <div className="w-full max-w-md bg-white/90 backdrop-blur-sm px-10 py-12 rounded-2xl shadow-lg space-y-10">
+        <div className="w-full max-w-md bg-white/95 backdrop-blur-sm px-10 py-12 rounded-2xl shadow-lg space-y-10">
           <div className="text-center space-y-3">
             <div className="flex justify-center">
               <div className="w-12 h-12 bg-violet-500 rounded-lg flex items-center justify-center">
@@ -194,7 +194,7 @@ export default function SignUpForm() {
               <span className="w-full border-t border-slate-300" />
             </div>
             <div className="relative flex justify-center text-xs uppercase text-slate-600">
-              <span className="bg-white px-3">Or</span>
+              <span className="bg-white/95 px-3">Or</span>
             </div>
           </div>
 

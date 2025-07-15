@@ -70,4 +70,16 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    border: none;
+    outline: none;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
 }

@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { signIn, signInWithGoogle, sendMagicLink } from "@/lib/actions";
 
-function SubmitButton({ loginMethod }) {
+function SubmitButton({ loginMethod }: { loginMethod: string | null }) {
   const { pending } = useFormStatus();
   return (
     <Button
@@ -83,7 +83,7 @@ export default function LoginForm() {
   const router = useRouter();
   const [state, formAction] = useActionState(signIn, null);
   const [magicLinkState, magicLinkAction] = useActionState(sendMagicLink, null);
-  const [loginMethod, setLoginMethod] = useState(null);
+  const [loginMethod, setLoginMethod] = useState<string | null>(null);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
 
   useEffect(() => {
@@ -98,163 +98,152 @@ export default function LoginForm() {
     }
   }, [magicLinkState]);
 
-  const handleMethodSelect = (method) => {
+  const handleMethodSelect = (method: string) => {
     setLoginMethod(method);
     setMagicLinkSent(false);
   };
 
   return (
-    <div
-      className="w-screen h-screen flex items-center justify-center"
-      style={{
-        background:
-          "linear-gradient(to bottom right, #DBEAFE, #F1F5F9 50%, #E9D5FF)",
-      }}
-    >
-      <div className="w-full flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-24 px-4 sm:px-6 md:px-12 py-10">
-        {/* Branding */}
-        <div className="hidden lg:block text-center">
-          <h2 className="text-5xl font-bold text-violet-700 mb-4">CareAI</h2>
-          <p className="text-slate-600 text-lg max-w-xs">
-            Empowering families with smart elder care.
-          </p>
+    <div className="w-full flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-24 px-4 sm:px-6 md:px-12 py-10">
+      {/* Branding */}
+      <div className="hidden lg:block text-center">
+        <h2 className="text-5xl font-bold text-violet-700 mb-4">CareAI</h2>
+        <p className="text-slate-600 text-lg max-w-xs">
+          Empowering families with smart elder care.
+        </p>
+      </div>
+
+      {/* Login Form */}
+      <div className="w-full max-w-md bg-white/95 backdrop-blur-sm px-10 py-12 rounded-2xl shadow-lg space-y-10">
+        <div className="text-center space-y-3">
+          <div className="flex justify-center">
+            <div className="w-12 h-12 bg-violet-500 rounded-lg flex items-center justify-center">
+              <span className="text-white text-xl font-bold">C</span>
+            </div>
+          </div>
+          <h1 className="text-4xl font-bold text-slate-800">Welcome Back</h1>
+          <p className="text-lg text-slate-700">Sign in to your account</p>
         </div>
 
-        {/* Login Form */}
-        <div className="w-full max-w-md bg-white/90 backdrop-blur-sm px-10 py-12 rounded-2xl shadow-lg space-y-10">
-          <div className="text-center space-y-3">
-            <div className="flex justify-center">
-              <div className="w-12 h-12 bg-violet-500 rounded-lg flex items-center justify-center">
-                <span className="text-white text-xl font-bold">C</span>
-              </div>
-            </div>
-            <h1 className="text-4xl font-bold text-slate-800">Welcome Back</h1>
-            <p className="text-lg text-slate-700">Sign in to your account</p>
+        {(state?.error || magicLinkState?.error) && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-base sm:text-sm">
+            {state?.error || magicLinkState?.error}
           </div>
+        )}
 
-          {(state?.error || magicLinkState?.error) && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-base sm:text-sm">
-              {state?.error || magicLinkState?.error}
+        {magicLinkSent && (
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-base sm:text-sm">
+            Magic link sent! Check your email to sign in.
+          </div>
+        )}
+
+        <form
+          action={loginMethod === "password" ? formAction : magicLinkAction}
+          className="space-y-6"
+        >
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <label htmlFor="email" className="block text-base text-slate-700">
+                Email
+              </label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="you@example.com"
+                required
+                className="h-12 sm:h-10 text-base sm:text-sm"
+              />
             </div>
-          )}
 
-          {magicLinkSent && (
-            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-base sm:text-sm">
-              Magic link sent! Check your email to sign in.
-            </div>
-          )}
+            <div className="space-y-3">
+              <label className="block text-base text-slate-700">
+                Login with:
+              </label>
 
-          <form
-            action={loginMethod === "password" ? formAction : magicLinkAction}
-            className="space-y-6"
-          >
-            <div className="space-y-5">
-              <div className="space-y-2">
-                <label
-                  htmlFor="email"
-                  className="block text-base text-slate-700"
-                >
-                  Email
-                </label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  required
-                  className="h-12 sm:h-10 text-base sm:text-sm"
-                />
-              </div>
-
-              <div className="space-y-3">
-                <label className="block text-base text-slate-700">
-                  Login with:
-                </label>
-
-                {!loginMethod ? (
-                  <div className="grid grid-cols-2 gap-3">
+              {!loginMethod ? (
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    type="button"
+                    onClick={() => handleMethodSelect("password")}
+                    variant="outline"
+                    className="h-12 sm:h-10 text-base sm:text-sm border-slate-300 hover:border-violet-400 hover:bg-violet-50"
+                  >
+                    Password
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={() => handleMethodSelect("magiclink")}
+                    variant="outline"
+                    className="h-12 sm:h-10 text-base sm:text-sm border-slate-300 hover:border-violet-400 hover:bg-violet-50"
+                  >
+                    Magic Link
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-600">
+                      Selected:{" "}
+                      {loginMethod === "password" ? "Password" : "Magic Link"}
+                    </span>
                     <Button
                       type="button"
-                      onClick={() => handleMethodSelect("password")}
-                      variant="outline"
-                      className="h-12 sm:h-10 text-base sm:text-sm border-slate-300 hover:border-violet-400 hover:bg-violet-50"
+                      onClick={() => setLoginMethod(null)}
+                      variant="ghost"
+                      className="text-violet-600 hover:text-violet-700 text-sm p-0 h-auto"
                     >
-                      Password
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={() => handleMethodSelect("magiclink")}
-                      variant="outline"
-                      className="h-12 sm:h-10 text-base sm:text-sm border-slate-300 hover:border-violet-400 hover:bg-violet-50"
-                    >
-                      Magic Link
+                      Change
                     </Button>
                   </div>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">
-                        Selected:{" "}
-                        {loginMethod === "password" ? "Password" : "Magic Link"}
-                      </span>
-                      <Button
-                        type="button"
-                        onClick={() => setLoginMethod(null)}
-                        variant="ghost"
-                        className="text-violet-600 hover:text-violet-700 text-sm p-0 h-auto"
-                      >
-                        Change
-                      </Button>
+
+                  {loginMethod === "password" && (
+                    <div className="space-y-2">
+                      <Input
+                        id="password"
+                        name="password"
+                        type="password"
+                        placeholder="Enter your password"
+                        required
+                        className="h-12 sm:h-10 text-base sm:text-sm"
+                      />
                     </div>
+                  )}
 
-                    {loginMethod === "password" && (
-                      <div className="space-y-2">
-                        <Input
-                          id="password"
-                          name="password"
-                          type="password"
-                          placeholder="Enter your password"
-                          required
-                          className="h-12 sm:h-10 text-base sm:text-sm"
-                        />
-                      </div>
-                    )}
-
-                    {loginMethod === "magiclink" && !magicLinkSent && (
-                      <div className="bg-violet-50 border border-violet-200 text-violet-700 px-4 py-3 rounded-lg text-base sm:text-sm">
-                        We'll send a secure login link to your email address.
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {loginMethod && !magicLinkSent && (
-              <SubmitButton loginMethod={loginMethod} />
-            )}
-          </form>
-
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-slate-300" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase text-slate-600">
-              <span className="bg-white px-3">Or</span>
+                  {loginMethod === "magiclink" && !magicLinkSent && (
+                    <div className="bg-violet-50 border border-violet-200 text-violet-700 px-4 py-3 rounded-lg text-base sm:text-sm">
+                      We'll send a secure login link to your email address.
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
-          <GoogleSignInButton />
+          {loginMethod && !magicLinkSent && (
+            <SubmitButton loginMethod={loginMethod} />
+          )}
+        </form>
 
-          <div className="text-center text-base sm:text-sm text-slate-600">
-            Don't have an account?{" "}
-            <Link
-              href="/auth/sign-up"
-              className="text-violet-600 hover:text-violet-700 hover:underline font-medium"
-            >
-              Sign up
-            </Link>
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-slate-300" />
           </div>
+          <div className="relative flex justify-center text-xs uppercase text-slate-600">
+            <span className="bg-white/95 px-3">Or</span>
+          </div>
+        </div>
+
+        <GoogleSignInButton />
+
+        <div className="text-center text-base sm:text-sm text-slate-600">
+          Don't have an account?{" "}
+          <Link
+            href="/auth/sign-up"
+            className="text-violet-600 hover:text-violet-700 hover:underline font-medium"
+          >
+            Sign up
+          </Link>
         </div>
       </div>
     </div>

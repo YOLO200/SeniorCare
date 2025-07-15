@@ -1,8 +1,42 @@
 "use server";
 
-import { createServerActionClient } from "@supabase/auth-helpers-nextjs";
+import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+
+// Helper function to create Supabase client for server actions
+async function createSupabaseClient() {
+  const cookieStore = await cookies();
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+        set(name: string, value: string, options: any) {
+          try {
+            cookieStore.set({ name, value, ...options });
+          } catch (error) {
+            // The `set` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing
+            // user sessions.
+          }
+        },
+        remove(name: string, options: any) {
+          try {
+            cookieStore.set({ name, value: "", ...options });
+          } catch (error) {
+            // The `delete` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing
+            // user sessions.
+          }
+        },
+      },
+    }
+  );
+}
 
 // Update the signIn function to handle redirects properly
 export async function signIn(prevState: any, formData: FormData) {
@@ -19,7 +53,7 @@ export async function signIn(prevState: any, formData: FormData) {
     return { error: "Email and password are required" };
   }
 
-  const supabase = createServerActionClient({ cookies });
+  const supabase = await createSupabaseClient();
 
   try {
     const { error } = await supabase.auth.signInWithPassword({
@@ -56,7 +90,7 @@ export async function signUp(prevState: any, formData: FormData) {
     return { error: "Email, password, first name, and last name are required" };
   }
 
-  const supabase = createServerActionClient({ cookies });
+  const supabase = await createSupabaseClient();
 
   try {
     const { data, error } = await supabase.auth.signUp({
@@ -92,7 +126,7 @@ export async function signUp(prevState: any, formData: FormData) {
 }
 
 export async function signUpWithGoogle() {
-  const supabase = createServerActionClient({ cookies });
+  const supabase = await createSupabaseClient();
 
   try {
     const { error } = await supabase.auth.signInWithOAuth({
@@ -114,14 +148,14 @@ export async function signUpWithGoogle() {
 }
 
 export async function signOut() {
-  const supabase = createServerActionClient({ cookies });
+  const supabase = await createSupabaseClient();
 
   await supabase.auth.signOut();
   redirect("/auth/login");
 }
 
 export async function signInWithGoogle() {
-  const supabase = createServerActionClient({ cookies });
+  const supabase = await createSupabaseClient();
 
   try {
     const { error } = await supabase.auth.signInWithOAuth({
@@ -152,7 +186,7 @@ export async function sendMagicLink(prevState: any, formData: FormData) {
     return { error: "Email is required" };
   }
 
-  const supabase = createServerActionClient({ cookies });
+  const supabase = await createSupabaseClient();
 
   try {
     const { error } = await supabase.auth.signInWithOtp({
@@ -188,7 +222,7 @@ export async function addRecipient(prevState: any, formData: FormData) {
     return { error: "All fields are required" };
   }
 
-  const supabase = createServerActionClient({ cookies });
+  const supabase = await createSupabaseClient();
 
   try {
     // Get the current user
