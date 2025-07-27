@@ -113,11 +113,12 @@ export default async function Home() {
             </div>
 
             {/* Add New Recipient Button */}
-            <Link href="/recipients/add">
-              <Button className="w-full bg-violet-500 hover:bg-violet-600 text-white py-4 text-base sm:py-3 sm:text-sm font-medium rounded-lg h-12 sm:h-10 transition-colors">
-                <Plus className="mr-2 h-4 w-4" />
-                Add New Recipient
-              </Button>
+            <Link 
+              href="/recipients/add"
+              className="w-full bg-violet-500 hover:bg-violet-600 text-white py-4 text-base sm:py-3 sm:text-sm font-medium rounded-lg h-12 sm:h-10 transition-colors inline-flex items-center justify-center"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add New Recipient
             </Link>
 
             {/* Sign Out Button */}
