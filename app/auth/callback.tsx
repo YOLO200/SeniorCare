@@ -69,6 +69,8 @@ export default async function AuthCallbackPage() {
             .slice(1)
             .join(" ") || "",
         email: session.user.email || "",
+        phone_number: "+1", // Default phone number placeholder
+        timezone: "America/New_York", // Default timezone for OAuth users
       });
 
       if (profileError) {

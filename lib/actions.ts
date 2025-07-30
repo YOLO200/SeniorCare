@@ -84,10 +84,11 @@ export async function signUp(prevState: any, formData: FormData) {
   const password = formData.get("password");
   const firstName = formData.get("firstName");
   const lastName = formData.get("lastName");
+  const timezone = formData.get("timezone");
 
   // Validate required fields
-  if (!email || !password || !firstName || !lastName) {
-    return { error: "Email, password, first name, and last name are required" };
+  if (!email || !password || !firstName || !lastName || !timezone) {
+    return { error: "All fields are required" };
   }
 
   const supabase = await createSupabaseClient();
@@ -109,6 +110,8 @@ export async function signUp(prevState: any, formData: FormData) {
         first_name: firstName.toString(),
         last_name: lastName.toString(),
         email: email.toString(),
+        phone_number: "+1", // Default phone number placeholder
+        timezone: timezone.toString(),
       });
 
       if (profileError) {
@@ -176,7 +179,8 @@ export async function signInWithGoogle() {
   }
 }
 
-export async function sendMagicLink(prevState: any, formData: FormData) {
+
+export async function resetPassword(prevState: any, formData: FormData) {
   if (!formData) {
     return { error: "Form data is missing" };
   }
@@ -189,20 +193,413 @@ export async function sendMagicLink(prevState: any, formData: FormData) {
   const supabase = await createSupabaseClient();
 
   try {
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email.toString(),
-      options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
-      },
-    });
+    const { error } = await supabase.auth.resetPasswordForEmail(
+      email.toString(),
+      {
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/reset-password`,
+      }
+    );
 
     if (error) {
       return { error: error.message };
     }
 
-    return { success: "Magic link sent! Check your email to sign in." };
+    return { success: "Password reset email sent! Check your email for instructions." };
   } catch (error) {
-    console.error("Magic link sign in error:", error);
+    console.error("Password reset error:", error);
+    return { error: "An unexpected error occurred. Please try again." };
+  }
+}
+
+export async function getMembers() {
+  const supabase = await createSupabaseClient();
+
+  try {
+    // Get the current user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return { error: "User not authenticated" };
+    }
+
+    // Get the user's ID from the users table
+    const { data: userData, error: userDataError } = await supabase
+      .from("users")
+      .select("id")
+      .eq("supabase_id", user.id)
+      .single();
+
+    if (userDataError || !userData) {
+      return { error: "User data not found" };
+    }
+
+    // Get all parents (recipients) for this user
+    const { data: parentsData, error: parentsError } = await supabase
+      .from("parents")
+      .select("id, name, phone_number, timezone")
+      .eq("user_id", userData.id)
+      .order("name");
+
+    if (parentsError) {
+      console.error("Error loading parents:", parentsError);
+      return { error: "Failed to load members" };
+    }
+
+    return { success: true, data: parentsData || [] };
+  } catch (error) {
+    console.error("Get members error:", error);
+    return { error: "An unexpected error occurred" };
+  }
+}
+
+export async function updateMember(prevState: any, formData: FormData) {
+  if (!formData) {
+    return { error: "Form data is missing" };
+  }
+
+  const memberId = formData.get("memberId");
+  const name = formData.get("name");
+  const phoneNumber = formData.get("phoneNumber");
+  const countryCode = formData.get("countryCode");
+  const timezone = formData.get("timezone");
+
+  // Validate required fields
+  if (!memberId || !name || !phoneNumber || !countryCode || !timezone) {
+    return { error: "All fields are required" };
+  }
+
+  const supabase = await createSupabaseClient();
+
+  try {
+    // Get the current user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return { error: "User not authenticated" };
+    }
+
+    // Format phone number with country code
+    const formattedPhoneNumber = `${countryCode}_${phoneNumber}`;
+
+    // Update the member
+    const { error: updateError } = await supabase
+      .from("parents")
+      .update({
+        name: name.toString(),
+        phone_number: formattedPhoneNumber,
+        timezone: timezone.toString(),
+      })
+      .eq("id", parseInt(memberId.toString()));
+
+    if (updateError) {
+      console.error("Update error:", updateError);
+      return { error: "Failed to update member. Please try again." };
+    }
+
+    return { success: "Member updated successfully!" };
+  } catch (error) {
+    console.error("Update member error:", error);
+    return { error: "An unexpected error occurred. Please try again." };
+  }
+}
+
+export async function getCaregivers() {
+  const supabase = await createSupabaseClient();
+
+  try {
+    // Get the current user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return { error: "User not authenticated" };
+    }
+
+    // Get the user's ID from the users table
+    const { data: userData, error: userDataError } = await supabase
+      .from("users")
+      .select("id")
+      .eq("supabase_id", user.id)
+      .single();
+
+    if (userDataError || !userData) {
+      return { error: "User data not found" };
+    }
+
+    // Get all caregivers for this user with access level
+    const { data: caregiversData, error: caregiversError } = await supabase
+      .from("user_caregivers")
+      .select(`
+        caregiver_id,
+        access_level,
+        caregivers (
+          id,
+          name,
+          email,
+          phone_number,
+          role,
+          notes,
+          created_at
+        )
+      `)
+      .eq("user_id", userData.id)
+      .order("caregivers(name)");
+
+    if (caregiversError) {
+      console.error("Error loading caregivers:", caregiversError);
+      return { error: "Failed to load caregivers" };
+    }
+
+    // Flatten the data structure
+    const caregivers = caregiversData?.map(item => ({
+      ...item.caregivers,
+      access_level: item.access_level
+    })) || [];
+
+    return { success: true, data: caregivers };
+  } catch (error) {
+    console.error("Get caregivers error:", error);
+    return { error: "An unexpected error occurred" };
+  }
+}
+
+export async function addCaregiver(prevState: any, formData: FormData) {
+  if (!formData) {
+    return { error: "Form data is missing" };
+  }
+
+  const name = formData.get("name");
+  const email = formData.get("email");
+  const phoneNumber = formData.get("phoneNumber");
+  const countryCode = formData.get("countryCode");
+  const role = formData.get("role") || "Caregiver";
+  const accessLevel = formData.get("accessLevel") || "view";
+  const notes = formData.get("notes") || "";
+
+  // Validate required fields
+  if (!name || !email || !phoneNumber || !countryCode) {
+    return { error: "Name, email, and phone number are required" };
+  }
+
+  const supabase = await createSupabaseClient();
+
+  try {
+    // Get the current user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return { error: "User not authenticated" };
+    }
+
+    // Get the user's ID from the users table
+    const { data: userData, error: userDataError } = await supabase
+      .from("users")
+      .select("id")
+      .eq("supabase_id", user.id)
+      .single();
+
+    if (userDataError || !userData) {
+      return { error: "User data not found" };
+    }
+
+    // Format phone number with country code
+    const formattedPhoneNumber = `${countryCode}_${phoneNumber}`;
+
+    // Check if caregiver already exists
+    const { data: existingCaregiver } = await supabase
+      .from("caregivers")
+      .select("id")
+      .eq("email", email.toString())
+      .single();
+
+    let caregiverId;
+
+    if (existingCaregiver) {
+      // Caregiver already exists, just link to current user
+      caregiverId = existingCaregiver.id;
+
+      // Check if already linked
+      const { data: existingLink } = await supabase
+        .from("user_caregivers")
+        .select("id")
+        .eq("user_id", userData.id)
+        .eq("caregiver_id", caregiverId)
+        .single();
+
+      if (existingLink) {
+        return { error: "This caregiver is already in your list" };
+      }
+    } else {
+      // Create new caregiver
+      const { data: newCaregiver, error: insertError } = await supabase
+        .from("caregivers")
+        .insert({
+          name: name.toString(),
+          email: email.toString(),
+          phone_number: formattedPhoneNumber,
+          role: role.toString(),
+          notes: notes.toString(),
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error("Insert caregiver error details:", insertError);
+        console.error("Insert caregiver error code:", insertError.code);
+        console.error("Insert caregiver error message:", insertError.message);
+        return { error: `Failed to add caregiver: ${insertError.message}` };
+      }
+
+      caregiverId = newCaregiver.id;
+    }
+
+    // Link caregiver to user
+    const { error: linkError } = await supabase
+      .from("user_caregivers")
+      .insert({
+        user_id: userData.id,
+        caregiver_id: caregiverId,
+        access_level: accessLevel.toString(),
+        added_by: userData.id,
+      });
+
+    if (linkError) {
+      console.error("Link caregiver error details:", linkError);
+      console.error("Link caregiver error code:", linkError.code);
+      console.error("Link caregiver error message:", linkError.message);
+      return { error: `Failed to link caregiver: ${linkError.message}` };
+    }
+
+    return { success: "Caregiver added successfully!" };
+  } catch (error) {
+    console.error("Add caregiver error:", error);
+    return { error: "An unexpected error occurred. Please try again." };
+  }
+}
+
+export async function updateCaregiver(prevState: any, formData: FormData) {
+  if (!formData) {
+    return { error: "Form data is missing" };
+  }
+
+  const caregiverId = formData.get("caregiverId");
+  const name = formData.get("name");
+  const email = formData.get("email");
+  const phoneNumber = formData.get("phoneNumber");
+  const countryCode = formData.get("countryCode");
+  const role = formData.get("role");
+  const accessLevel = formData.get("accessLevel");
+  const notes = formData.get("notes");
+
+  console.log('updateCaregiver received data:', {
+    caregiverId,
+    name,
+    email,
+    phoneNumber,
+    countryCode,
+    role,
+    accessLevel,
+    notes
+  });
+
+  // Validate required fields
+  if (!caregiverId || !name || !email || !phoneNumber || !countryCode || !role) {
+    return { error: "All fields are required" };
+  }
+
+  const supabase = await createSupabaseClient();
+
+  try {
+    // Get the current user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return { error: "User not authenticated" };
+    }
+
+    // Get the user's ID and check access level
+    const { data: userData, error: userDataError } = await supabase
+      .from("users")
+      .select("id")
+      .eq("supabase_id", user.id)
+      .single();
+
+    if (userDataError || !userData) {
+      return { error: "User data not found" };
+    }
+
+    // Check user has access to this caregiver (any access level allows editing your own caregiver relationships)
+    const { data: accessData } = await supabase
+      .from("user_caregivers")
+      .select("access_level, added_by")
+      .eq("user_id", userData.id)
+      .eq("caregiver_id", parseInt(caregiverId.toString()))
+      .single();
+
+    if (!accessData) {
+      return { error: "You don't have access to this caregiver" };
+    }
+
+    // Users can always edit caregivers they added, or if they have edit/admin access
+    const canEdit = accessData.added_by === userData.id || ['edit', 'admin'].includes(accessData.access_level);
+    
+    if (!canEdit) {
+      return { error: "You don't have permission to edit this caregiver" };
+    }
+
+    // Format phone number with country code
+    const formattedPhoneNumber = `${countryCode}_${phoneNumber}`;
+
+    // Update the caregiver
+    const { error: updateError } = await supabase
+      .from("caregivers")
+      .update({
+        name: name.toString(),
+        email: email.toString(),
+        phone_number: formattedPhoneNumber,
+        role: role.toString(),
+        notes: notes.toString(),
+      })
+      .eq("id", parseInt(caregiverId.toString()));
+
+    if (updateError) {
+      console.error("Update error:", updateError);
+      return { error: "Failed to update caregiver. Please try again." };
+    }
+
+    // Update access level in user_caregivers table if provided
+    if (accessLevel) {
+      const { error: accessUpdateError } = await supabase
+        .from("user_caregivers")
+        .update({
+          access_level: accessLevel.toString(),
+        })
+        .eq("user_id", userData.id)
+        .eq("caregiver_id", parseInt(caregiverId.toString()));
+
+      if (accessUpdateError) {
+        console.error("Access level update error:", accessUpdateError);
+        return { error: "Failed to update access level. Please try again." };
+      }
+    }
+
+    return { success: "Caregiver updated successfully!" };
+  } catch (error) {
+    console.error("Update caregiver error:", error);
     return { error: "An unexpected error occurred. Please try again." };
   }
 }

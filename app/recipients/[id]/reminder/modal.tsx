@@ -19,6 +19,7 @@ interface ReminderModalProps {
   mode?: "add" | "edit";
   reminder?: any;
   trigger?: React.ReactNode;
+  onSuccess?: () => void;
 }
 
 export default function ReminderModal({
@@ -27,6 +28,7 @@ export default function ReminderModal({
   mode = "add",
   reminder,
   trigger,
+  onSuccess,
 }: ReminderModalProps) {
   const [open, setOpen] = useState(false);
 
@@ -57,7 +59,10 @@ export default function ReminderModal({
         </DialogHeader>
         <ReminderForm
           recipientId={recipientId}
-          onSuccess={() => setOpen(false)}
+          onSuccess={() => {
+            setOpen(false);
+            if (onSuccess) onSuccess();
+          }}
           mode={mode}
           reminder={reminder}
         />

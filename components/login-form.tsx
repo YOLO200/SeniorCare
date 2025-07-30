@@ -7,10 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { signIn, signInWithGoogle, sendMagicLink } from "@/lib/actions";
+import { useEffect } from "react";
+import { signIn, signInWithGoogle } from "@/lib/actions";
 
-function SubmitButton({ loginMethod }: { loginMethod: string | null }) {
+function SubmitButton() {
   const { pending } = useFormStatus();
   return (
     <Button
@@ -21,14 +21,10 @@ function SubmitButton({ loginMethod }: { loginMethod: string | null }) {
       {pending ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          {loginMethod === "password"
-            ? "Signing in..."
-            : "Sending magic link..."}
+          Signing in...
         </>
-      ) : loginMethod === "password" ? (
-        "Sign In"
       ) : (
-        "Send Magic Link"
+        "Sign In"
       )}
     </Button>
   );
@@ -82,26 +78,12 @@ function GoogleSignInButton() {
 export default function LoginForm() {
   const router = useRouter();
   const [state, formAction] = useActionState(signIn, null);
-  const [magicLinkState, magicLinkAction] = useActionState(sendMagicLink, null);
-  const [loginMethod, setLoginMethod] = useState<string | null>(null);
-  const [magicLinkSent, setMagicLinkSent] = useState(false);
 
   useEffect(() => {
     if (state?.success) {
       router.push("/");
     }
   }, [state, router]);
-
-  useEffect(() => {
-    if (magicLinkState?.success) {
-      setMagicLinkSent(true);
-    }
-  }, [magicLinkState]);
-
-  const handleMethodSelect = (method: string) => {
-    setLoginMethod(method);
-    setMagicLinkSent(false);
-  };
 
   return (
     <div className="w-full flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-24 px-4 sm:px-6 md:px-12 py-10">
@@ -125,22 +107,13 @@ export default function LoginForm() {
           <p className="text-lg text-slate-700">Sign in to your account</p>
         </div>
 
-        {(state?.error || magicLinkState?.error) && (
+        {state?.error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-base sm:text-sm">
-            {state?.error || magicLinkState?.error}
+            {state.error}
           </div>
         )}
 
-        {magicLinkSent && (
-          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-base sm:text-sm">
-            Magic link sent! Check your email to sign in.
-          </div>
-        )}
-
-        <form
-          action={loginMethod === "password" ? formAction : magicLinkAction}
-          className="space-y-6"
-        >
+        <form action={formAction} className="space-y-6">
           <div className="space-y-5">
             <div className="space-y-2">
               <label htmlFor="email" className="block text-base text-slate-700">
@@ -155,74 +128,21 @@ export default function LoginForm() {
                 className="h-12 sm:h-10 text-base sm:text-sm"
               />
             </div>
-
-            <div className="space-y-3">
-              <label className="block text-base text-slate-700">
-                Login with:
+            <div className="space-y-2">
+              <label htmlFor="password" className="block text-base text-slate-700">
+                Password
               </label>
-
-              {!loginMethod ? (
-                <div className="grid grid-cols-2 gap-3">
-                  <Button
-                    type="button"
-                    onClick={() => handleMethodSelect("password")}
-                    variant="outline"
-                    className="h-12 sm:h-10 text-base sm:text-sm border-slate-300 hover:border-violet-400 hover:bg-violet-50"
-                  >
-                    Password
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={() => handleMethodSelect("magiclink")}
-                    variant="outline"
-                    className="h-12 sm:h-10 text-base sm:text-sm border-slate-300 hover:border-violet-400 hover:bg-violet-50"
-                  >
-                    Magic Link
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-600">
-                      Selected:{" "}
-                      {loginMethod === "password" ? "Password" : "Magic Link"}
-                    </span>
-                    <Button
-                      type="button"
-                      onClick={() => setLoginMethod(null)}
-                      variant="ghost"
-                      className="text-violet-600 hover:text-violet-700 text-sm p-0 h-auto"
-                    >
-                      Change
-                    </Button>
-                  </div>
-
-                  {loginMethod === "password" && (
-                    <div className="space-y-2">
-                      <Input
-                        id="password"
-                        name="password"
-                        type="password"
-                        placeholder="Enter your password"
-                        required
-                        className="h-12 sm:h-10 text-base sm:text-sm"
-                      />
-                    </div>
-                  )}
-
-                  {loginMethod === "magiclink" && !magicLinkSent && (
-                    <div className="bg-violet-50 border border-violet-200 text-violet-700 px-4 py-3 rounded-lg text-base sm:text-sm">
-                      We'll send a secure login link to your email address.
-                    </div>
-                  )}
-                </div>
-              )}
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                placeholder="Enter your password"
+                required
+                className="h-12 sm:h-10 text-base sm:text-sm"
+              />
             </div>
           </div>
-
-          {loginMethod && !magicLinkSent && (
-            <SubmitButton loginMethod={loginMethod} />
-          )}
+          <SubmitButton />
         </form>
 
         <div className="relative my-6">

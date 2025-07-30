@@ -4,9 +4,17 @@ import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Loader2, MapPin } from "lucide-react";
 import Link from "next/link";
 import { signUp, signUpWithGoogle } from "@/lib/actions";
+import { useState } from "react";
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -75,6 +83,7 @@ function GoogleSignUpButton() {
 
 export default function SignUpForm() {
   const [state, formAction] = useActionState(signUp, null);
+  const [selectedTimezone, setSelectedTimezone] = useState("America/New_York");
 
   return (
     <div
@@ -184,6 +193,26 @@ export default function SignUpForm() {
                   required
                   className="h-12 sm:h-10 text-base sm:text-sm"
                 />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-base text-slate-700 flex items-center space-x-2">
+                  <MapPin className="h-4 w-4" />
+                  <span>Timezone <span className="text-red-500">*</span></span>
+                </label>
+                <Select name="timezone" value={selectedTimezone} onValueChange={setSelectedTimezone} required>
+                  <SelectTrigger className="h-12 sm:h-10 text-base sm:text-sm">
+                    <SelectValue placeholder="Select your timezone" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="America/New_York">Eastern Time (ET)</SelectItem>
+                    <SelectItem value="America/Chicago">Central Time (CT)</SelectItem>
+                    <SelectItem value="America/Denver">Mountain Time (MT)</SelectItem>
+                    <SelectItem value="America/Phoenix">Mountain Time - Arizona (MST)</SelectItem>
+                    <SelectItem value="America/Los_Angeles">Pacific Time (PT)</SelectItem>
+                    <SelectItem value="America/Anchorage">Alaska Time (AKT)</SelectItem>
+                    <SelectItem value="Pacific/Honolulu">Hawaii Time (HT)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <SubmitButton />

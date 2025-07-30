@@ -141,16 +141,13 @@ export default async function RecipientInfoPage({
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-2 sm:space-x-4">
-              <Link href="/">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-slate-500 hover:text-violet-600 hover:bg-violet-50 text-xs sm:text-sm"
-                >
-                  <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                  <span className="hidden sm:inline">Back to Recipients</span>
-                  <span className="sm:hidden">Back</span>
-                </Button>
+              <Link 
+                href="/"
+                className="inline-flex items-center text-slate-500 hover:text-violet-600 hover:bg-violet-50 text-xs sm:text-sm px-3 py-1.5 rounded-md transition-colors"
+              >
+                <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Back to Recipients</span>
+                <span className="sm:hidden">Back</span>
               </Link>
               <h1 className="text-lg sm:text-xl font-semibold text-slate-800">
                 Care Recipient Details
@@ -177,17 +174,14 @@ export default async function RecipientInfoPage({
           {/* Recipient Information Card */}
           <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg mb-4 sm:mb-6 overflow-hidden relative">
             <div className="absolute top-4 right-4 z-10">
-              <Link href={`/recipients/${id}`}>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-slate-300 text-slate-500 hover:text-violet-600 hover:bg-violet-50 h-8 px-2 flex items-center gap-1"
-                  title="Edit Details"
-                >
-                  <Edit className="h-4 w-4" />
-                  <span className="text-xs font-medium">Edit Details</span>
-                </Button>
-              </Link>
+              <button
+                className="inline-flex items-center border border-slate-300 text-slate-500 hover:text-violet-600 hover:bg-violet-50 h-8 px-2 gap-1 rounded-md transition-colors opacity-50 cursor-not-allowed"
+                title="Edit functionality coming soon"
+                disabled
+              >
+                <Edit className="h-4 w-4" />
+                <span className="text-xs font-medium">Edit Details</span>
+              </button>
             </div>
             <div className="bg-violet-500 px-4 sm:px-6 py-4">
               <div className="flex items-center space-x-3">
