@@ -37,7 +37,7 @@ export default function Sidebar({
     { icon: Bell, label: "Reminders", href: "/reminders" },
     { icon: MessageSquare, label: "Chatbot", href: "/chatbot" },
     { icon: FileText, label: "Logs", href: "/logs" },
-    { icon: Watch, label: "Devices", href: "/Devices" },
+    { icon: Watch, label: "Devices", href: "/devices" },
     { icon: Brain, label: "Cognitive AI Agent", href: "/cognitive-ai" },
     { icon: CreditCard, label: "Billing", href: "/billing" },
     { icon: Settings, label: "Profile Settings", href: "/settings" },

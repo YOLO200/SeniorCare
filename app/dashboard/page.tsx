@@ -14,6 +14,7 @@ import RemindersPage from "@/components/pages/RemindersPage";
 import ChatbotPage from "@/components/pages/ChatbotPage";
 import SettingsPage from "@/components/pages/SettingsPage";
 import BillingPage from "@/components/pages/BillingPage";
+import DevicesPage from "@/components/pages/DevicesPage";
 
 export default function Dashboard() {
   const [user, setUser] = useState<any>(null);
@@ -79,6 +80,8 @@ export default function Dashboard() {
         return <SettingsPage />;
       case "/billing":
         return <BillingPage />;
+      case "/devices":
+        return <DevicesPage />;
       default:
         return <HomePage setCurrentPage={setCurrentPage} />;
     }
