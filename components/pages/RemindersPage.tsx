@@ -1,7 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Bell, Plus, Phone, MessageSquare, Calendar, Edit, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Bell,
+  Plus,
+  Phone,
+  MessageSquare,
+  Calendar,
+  Edit,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -14,6 +23,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import ReminderForm from "@/app/recipients/[id]/reminder/ReminderForm";
+import FullCalendar from "@fullcalendar/react";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import timeGridPlugin from "@fullcalendar/timegrid";
+import interactionPlugin from "@fullcalendar/interaction";
 
 interface Reminder {
   id: number;
@@ -37,18 +50,20 @@ interface Reminder {
 }
 
 export default function RemindersPage() {
-  const [deliveryFilter, setDeliveryFilter] = useState<'call' | 'text'>('call');
+  const [deliveryFilter, setDeliveryFilter] = useState<"call" | "text">("call");
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [parents, setParents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedReminder, setSelectedReminder] = useState<Reminder | null>(null);
+  const [selectedReminder, setSelectedReminder] = useState<Reminder | null>(
+    null
+  );
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
-  const [selectedParentId, setSelectedParentId] = useState<string>('');
-  const [selectedMemberId, setSelectedMemberId] = useState<string>('');
+  const [modalMode, setModalMode] = useState<"add" | "edit" | "view">("add");
+  const [selectedParentId, setSelectedParentId] = useState<string>("");
+  const [selectedMemberId, setSelectedMemberId] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(1);
   const { toast } = useToast();
-  
+
   const REMINDERS_PER_PAGE = 10;
 
   const supabase = createClient();
@@ -60,7 +75,9 @@ export default function RemindersPage() {
   const fetchData = async () => {
     try {
       // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       // Get user data
@@ -89,29 +106,28 @@ export default function RemindersPage() {
       }
 
       // Sort parents alphabetically by name
-      const sortedParents = (parentsData || []).sort((a, b) => 
+      const sortedParents = (parentsData || []).sort((a, b) =>
         a.name.localeCompare(b.name)
       );
       setParents(sortedParents);
 
-      // Set the first parent as selected by default
-      if (sortedParents.length > 0 && !selectedMemberId) {
-        setSelectedMemberId(sortedParents[0].id.toString());
-        setSelectedParentId(sortedParents[0].id.toString());
-      }
+      // Don't select any parent by default - show all users
+      // Only set selectedMemberId if it's already set (user clicked on a specific user)
 
       // Fetch all reminders for all parents
-      const parentIds = sortedParents?.map(p => p.id) || [];
+      const parentIds = sortedParents?.map((p) => p.id) || [];
       if (parentIds.length > 0) {
         const { data: remindersData, error: remindersError } = await supabase
           .from("reminders")
-          .select(`
+          .select(
+            `
             *,
             parents!reminders_parent_id_fkey (
               id,
               name
             )
-          `)
+          `
+          )
           .in("parent_id", parentIds)
           .order("time");
 
@@ -126,10 +142,11 @@ export default function RemindersPage() {
         }
 
         // Transform the data to include parent information
-        const transformedReminders = remindersData?.map(r => ({
-          ...r,
-          parent: r.parents
-        })) || [];
+        const transformedReminders =
+          remindersData?.map((r) => ({
+            ...r,
+            parent: r.parents,
+          })) || [];
 
         setReminders(transformedReminders);
       }
@@ -146,8 +163,9 @@ export default function RemindersPage() {
   };
 
   const filteredReminders = reminders.filter(
-    r => r.delivery_method === deliveryFilter && 
-         r.parent_id.toString() === selectedMemberId
+    (r) =>
+      r.delivery_method === deliveryFilter &&
+      (selectedMemberId === "" || r.parent_id.toString() === selectedMemberId)
   );
 
   // Calculate pagination
@@ -165,20 +183,21 @@ export default function RemindersPage() {
     if (parents.length === 0) {
       toast({
         title: "No Recipients",
-        description: "Please add a care recipient first before creating reminders.",
+        description:
+          "Please add a care recipient first before creating reminders.",
         variant: "destructive",
       });
       return;
     }
     setSelectedReminder(null);
-    setModalMode('add');
-    setSelectedParentId(selectedMemberId || parents[0]?.id.toString() || '');
+    setModalMode("add");
+    setSelectedParentId(selectedMemberId || parents[0]?.id.toString() || "");
     setModalOpen(true);
   };
 
   const handleEditReminder = (reminder: Reminder) => {
     setSelectedReminder(reminder);
-    setModalMode('edit');
+    setModalMode("edit");
     setSelectedParentId(reminder.parent_id.toString());
     setModalOpen(true);
   };
@@ -190,91 +209,210 @@ export default function RemindersPage() {
 
   const getDayString = (reminder: Reminder) => {
     const days = [];
-    if (reminder.monday) days.push('Mon');
-    if (reminder.tuesday) days.push('Tue');
-    if (reminder.wednesday) days.push('Wed');
-    if (reminder.thursday) days.push('Thu');
-    if (reminder.friday) days.push('Fri');
-    if (reminder.saturday) days.push('Sat');
-    if (reminder.sunday) days.push('Sun');
-    
-    if (days.length === 7) return 'Every day';
-    if (days.length === 0) return 'No days selected';
-    return days.join(', ');
+    if (reminder.monday) days.push("Mon");
+    if (reminder.tuesday) days.push("Tue");
+    if (reminder.wednesday) days.push("Wed");
+    if (reminder.thursday) days.push("Thu");
+    if (reminder.friday) days.push("Fri");
+    if (reminder.saturday) days.push("Sat");
+    if (reminder.sunday) days.push("Sun");
+
+    if (days.length === 7) return "Every day";
+    if (days.length === 0) return "No days selected";
+    return days.join(", ");
   };
+
+  // Convert reminders to calendar events
+  const convertRemindersToEvents = (reminders: Reminder[]) => {
+    const events: any[] = [];
+
+    reminders.forEach((reminder) => {
+      const parent = parents.find((p) => p.id === reminder.parent_id);
+      const color = getParentColor(reminder.parent_id);
+
+      // Create recurring events for each selected day
+      const daysOfWeek = [];
+      if (reminder.monday) daysOfWeek.push(1);
+      if (reminder.tuesday) daysOfWeek.push(2);
+      if (reminder.wednesday) daysOfWeek.push(3);
+      if (reminder.thursday) daysOfWeek.push(4);
+      if (reminder.friday) daysOfWeek.push(5);
+      if (reminder.saturday) daysOfWeek.push(6);
+      if (reminder.sunday) daysOfWeek.push(0);
+
+      daysOfWeek.forEach((dayOfWeek) => {
+        events.push({
+          id: `${reminder.id}-${dayOfWeek}`,
+          title: `${reminder.name} (${parent?.name || "Unknown"})`,
+          startTime: reminder.time,
+          daysOfWeek: [dayOfWeek],
+          startRecur: new Date(new Date().getFullYear() - 1, 0, 1), // Start from beginning of last year
+          endRecur: new Date(new Date().getFullYear() + 1, 11, 31), // End of next year
+          backgroundColor: color,
+          borderColor: color,
+          textColor: "#ffffff",
+          extendedProps: {
+            reminder: reminder,
+            parent: parent,
+          },
+        });
+      });
+    });
+
+    return events;
+  };
+
+  // Generate colors for different parents - Specific Pastel Colors
+  const getParentColor = (parentId: number) => {
+    const colors = [
+      "#87CEEB", // Baby Blue
+      "#FFB6C1", // Pastel Pink
+      "#D8BFD8", // Lavender (darker)
+      "#FFDAB9", // Peach
+      "#98FB98", // Pastel Green
+    ];
+
+    const parentIndex = parents.findIndex((p) => p.id === parentId);
+    return colors[parentIndex % colors.length];
+  };
+
+  const handleEventClick = (info: any) => {
+    const reminder = info.event.extendedProps.reminder;
+    if (reminder) {
+      // Check if this is a past event
+      const eventDate = info.event.start;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (eventDate < today) {
+        // Past event - show read-only view
+        setSelectedReminder(reminder);
+        setModalMode("view");
+        setSelectedParentId(reminder.parent_id.toString());
+        setModalOpen(true);
+      } else {
+        // Future event - allow editing
+        handleEditReminder(reminder);
+      }
+    }
+  };
+
+  const calendarEvents = convertRemindersToEvents(filteredReminders);
+
+  // Debug logging
+  console.log("Filtered reminders:", filteredReminders);
+  console.log("Calendar events:", calendarEvents);
 
   return (
     <>
       {/* Header */}
       <div className="mb-8 mt-16 lg:mt-0">
         <h1 className="text-3xl font-bold text-slate-800">Reminders</h1>
-        <p className="text-slate-600 mt-2">Manage all reminders across your care recipients</p>
+        <p className="text-slate-600 mt-2">
+          Manage all reminders across your care recipients
+        </p>
       </div>
 
       {/* Filter and Stats */}
       <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 mb-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex-1">
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">Active Reminders</h2>
+            <h2 className="text-2xl font-bold text-slate-800 mb-2">
+              Active Reminders
+            </h2>
             <div className="text-sm text-slate-600 mb-4">
-              <span className="font-medium">{filteredReminders.length}</span> {deliveryFilter} reminder{filteredReminders.length !== 1 ? 's' : ''}
-              {selectedMemberId && parents.find(p => p.id.toString() === selectedMemberId) && (
-                <span className="text-slate-500"> for {parents.find(p => p.id.toString() === selectedMemberId)?.name}</span>
+              <span className="font-medium">{filteredReminders.length}</span>{" "}
+              {deliveryFilter} reminder
+              {filteredReminders.length !== 1 ? "s" : ""}
+              {selectedMemberId === "" ? (
+                <span className="text-slate-500"> for all users</span>
+              ) : (
+                selectedMemberId &&
+                parents.find((p) => p.id.toString() === selectedMemberId) && (
+                  <span className="text-slate-500">
+                    {" "}
+                    for{" "}
+                    {
+                      parents.find((p) => p.id.toString() === selectedMemberId)
+                        ?.name
+                    }
+                  </span>
+                )
               )}
             </div>
-            
+
             {/* Member Selector */}
             {parents.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {parents.map((parent) => (
-                  <button
-                    key={parent.id}
-                    onClick={() => {
-                      setSelectedMemberId(parent.id.toString());
-                      setSelectedParentId(parent.id.toString());
-                    }}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                      selectedMemberId === parent.id.toString()
-                        ? 'bg-violet-500 text-white shadow-md'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
-                  >
-                    {parent.name}
-                  </button>
-                ))}
+                <button
+                  onClick={() => {
+                    setSelectedMemberId("");
+                    setSelectedParentId("");
+                  }}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    selectedMemberId === ""
+                      ? "bg-violet-500 text-white shadow-md"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  All Users
+                </button>
+                {parents.map((parent, index) => {
+                  const parentColor = getParentColor(parent.id);
+                  return (
+                    <button
+                      key={parent.id}
+                      onClick={() => {
+                        setSelectedMemberId(parent.id.toString());
+                        setSelectedParentId(parent.id.toString());
+                      }}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+                        selectedMemberId === parent.id.toString()
+                          ? "bg-violet-500 text-white shadow-md"
+                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
+                    >
+                      <div
+                        className="w-3 h-3 rounded-full border border-white shadow-sm"
+                        style={{ backgroundColor: parentColor }}
+                      />
+                      {parent.name}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
-          
+
           <div className="flex items-center space-x-3">
             {/* Filter Buttons */}
             <div className="flex bg-slate-100 rounded-lg p-1">
               <button
-                onClick={() => setDeliveryFilter('call')}
+                onClick={() => setDeliveryFilter("call")}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  deliveryFilter === 'call'
-                    ? 'bg-blue-200 text-blue-800 shadow-md border border-blue-300'
-                    : 'text-slate-600 hover:text-slate-800 hover:bg-blue-50'
+                  deliveryFilter === "call"
+                    ? "bg-blue-200 text-blue-800 shadow-md border border-blue-300"
+                    : "text-slate-600 hover:text-slate-800 hover:bg-blue-50"
                 }`}
               >
                 <Phone className="h-4 w-4" />
                 <span>Call</span>
               </button>
               <button
-                onClick={() => setDeliveryFilter('text')}
+                onClick={() => setDeliveryFilter("text")}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  deliveryFilter === 'text'
-                    ? 'bg-green-200 text-green-800 shadow-md border border-green-300'
-                    : 'text-slate-600 hover:text-slate-800 hover:bg-green-50'
+                  deliveryFilter === "text"
+                    ? "bg-green-200 text-green-800 shadow-md border border-green-300"
+                    : "text-slate-600 hover:text-slate-800 hover:bg-green-50"
                 }`}
               >
                 <MessageSquare className="h-4 w-4" />
                 <span>Text</span>
               </button>
             </div>
-            
+
             {/* Add Reminder Button */}
-            <button 
+            <button
               onClick={handleAddReminder}
               className="bg-violet-500 hover:bg-violet-600 text-white px-4 py-2 rounded-lg flex items-center"
             >
@@ -285,7 +423,7 @@ export default function RemindersPage() {
         </div>
       </div>
 
-      {/* Reminders List */}
+      {/* Calendar View */}
       <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6">
         {loading ? (
           <div className="text-center py-12">
@@ -293,123 +431,31 @@ export default function RemindersPage() {
             <p className="text-slate-600 mt-4">Loading reminders...</p>
           </div>
         ) : filteredReminders.length > 0 ? (
-          <div>
-            <div className="space-y-4">
-              {paginatedReminders.map((reminder) => (
-              <div
-                key={reminder.id}
-                onClick={() => handleEditReminder(reminder)}
-                className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-slate-50 rounded-lg border border-slate-200 hover:bg-slate-100 hover:border-slate-300 transition-all cursor-pointer group"
-              >
-                <div className="flex-1 min-w-0 mb-3 sm:mb-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-medium text-slate-800 text-base group-hover:text-violet-700">
-                      {reminder.name}
-                    </h4>
-                    <span className="text-xs text-slate-500 bg-slate-200 px-2 py-1 rounded">
-                      {reminder.category}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-500">
-                    {reminder.delivery_method === 'call' ? (
-                      <Phone className="h-3 w-3" />
-                    ) : (
-                      <MessageSquare className="h-3 w-3" />
-                    )}
-                    <span>{reminder.delivery_method === 'call' ? 'Phone Call' : 'Text Message'}</span>
-                  </div>
-                  {reminder.notes && (
-                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                      {reminder.notes}
-                    </p>
-                  )}
-                </div>
-                <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-3 sm:gap-1">
-                  <div className="text-left sm:text-right">
-                    <p className="text-sm font-medium text-slate-700 mb-1">
-                      {reminder.time}
-                    </p>
-                    <p className="text-xs text-slate-600">
-                      {getDayString(reminder)}
-                    </p>
-                  </div>
-                  <Edit className="h-4 w-4 text-slate-400 group-hover:text-violet-600 sm:mt-2" />
-                </div>
-              </div>
-            ))}
-            </div>
-            
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-6 pt-6 border-t border-slate-200">
-                <div className="text-sm text-slate-600">
-                  Showing {startIndex + 1} to {Math.min(endIndex, filteredReminders.length)} of {filteredReminders.length} reminders
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setCurrentPage(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className={`px-3 py-1 rounded-md flex items-center gap-1 text-sm flex-shrink-0 ${
-                      currentPage === 1
-                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                        : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50'
-                    }`}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    Previous
-                  </button>
-                  
-                  <div className="flex items-center gap-1 overflow-x-auto max-w-[200px] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                    {(() => {
-                      const maxVisible = 4;
-                      let startPage = 1;
-                      let endPage = Math.min(maxVisible, totalPages);
-                      
-                      if (currentPage > 3 && totalPages > maxVisible) {
-                        startPage = currentPage - 2;
-                        endPage = Math.min(currentPage + 1, totalPages);
-                        
-                        if (endPage - startPage < maxVisible - 1) {
-                          startPage = Math.max(1, endPage - maxVisible + 1);
-                        }
-                      }
-                      
-                      const pages = [];
-                      for (let i = startPage; i <= endPage; i++) {
-                        pages.push(i);
-                      }
-                      
-                      return pages.map((page) => (
-                        <button
-                          key={page}
-                          onClick={() => setCurrentPage(page)}
-                          className={`w-8 h-8 rounded-md text-sm font-medium flex-shrink-0 ${
-                            currentPage === page
-                              ? 'bg-violet-500 text-white'
-                              : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50'
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      ));
-                    })()}
-                  </div>
-                  
-                  <button
-                    onClick={() => setCurrentPage(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className={`px-3 py-1 rounded-md flex items-center gap-1 text-sm flex-shrink-0 ${
-                      currentPage === totalPages
-                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                        : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50'
-                    }`}
-                  >
-                    Next
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            )}
+          <div className="h-[800px] p-4">
+            <FullCalendar
+              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+              initialView="dayGridMonth"
+              headerToolbar={{
+                left: "prev,next today",
+                center: "title",
+                right: "dayGridMonth,timeGridWeek",
+              }}
+              events={calendarEvents}
+              eventClick={handleEventClick}
+              height="100%"
+              eventDisplay="block"
+              dayMaxEvents={false}
+              dayMaxEventRows={false}
+              eventTimeFormat={{
+                hour: "numeric",
+                minute: "2-digit",
+                meridiem: "short",
+              }}
+              validRange={{
+                start: new Date(new Date().getFullYear() - 1, 0, 1),
+                end: new Date(new Date().getFullYear() + 1, 11, 31),
+              }}
+            />
           </div>
         ) : (
           <div className="text-center py-12">
@@ -418,7 +464,7 @@ export default function RemindersPage() {
               No {deliveryFilter} reminders found
             </h3>
             <p className="text-slate-600 mb-6">
-              {parents.length === 0 
+              {parents.length === 0
                 ? "You need to add members first before creating reminders."
                 : `No ${deliveryFilter} reminders configured yet.`}
             </p>
@@ -426,25 +472,105 @@ export default function RemindersPage() {
         )}
       </div>
 
-      {/* Add/Edit Reminder Modal */}
+      {/* Add/Edit/View Reminder Modal */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="max-w-xl w-[95vw] max-h-[90vh] overflow-y-auto rounded-xl border-0 shadow-xl">
           <DialogHeader className="space-y-3">
             <DialogTitle className="text-lg sm:text-xl">
-              {modalMode === 'add' ? 'Add New Reminder' : 'Edit Reminder'}
+              {modalMode === "add"
+                ? "Add New Reminder"
+                : modalMode === "edit"
+                ? "Edit Reminder"
+                : "Reminder Details"}
             </DialogTitle>
             <DialogDescription className="text-sm sm:text-base">
-              {modalMode === 'add'
-                ? 'Fill out the form below to set up the reminder details.'
-                : 'Update the reminder details below.'}
+              {modalMode === "add"
+                ? "Fill out the form below to set up the reminder details."
+                : modalMode === "edit"
+                ? "Update the reminder details below."
+                : "View the reminder details below."}
             </DialogDescription>
           </DialogHeader>
-          <ReminderForm
-            recipientId={selectedParentId}
-            onSuccess={handleSuccess}
-            mode={modalMode}
-            reminder={selectedReminder}
-          />
+
+          {modalMode === "view" ? (
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-slate-700">
+                  Name
+                </label>
+                <p className="mt-1 text-sm text-slate-900 bg-slate-50 p-3 rounded-lg">
+                  {selectedReminder?.name}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-slate-700">
+                    Category
+                  </label>
+                  <p className="mt-1 text-sm text-slate-900 bg-slate-50 p-3 rounded-lg">
+                    {selectedReminder?.category}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-slate-700">
+                    Time
+                  </label>
+                  <p className="mt-1 text-sm text-slate-900 bg-slate-50 p-3 rounded-lg">
+                    {selectedReminder?.time}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-slate-700">
+                    Delivery Method
+                  </label>
+                  <p className="mt-1 text-sm text-slate-900 bg-slate-50 p-3 rounded-lg">
+                    {selectedReminder?.delivery_method === "call"
+                      ? "Phone Call"
+                      : "Text Message"}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-slate-700">
+                  Days
+                </label>
+                <p className="mt-1 text-sm text-slate-900 bg-slate-50 p-3 rounded-lg">
+                  {selectedReminder ? getDayString(selectedReminder) : ""}
+                </p>
+              </div>
+
+              {selectedReminder?.notes && (
+                <div>
+                  <label className="text-sm font-medium text-slate-700">
+                    Notes
+                  </label>
+                  <p className="mt-1 text-sm text-slate-900 bg-slate-50 p-3 rounded-lg">
+                    {selectedReminder.notes}
+                  </p>
+                </div>
+              )}
+
+              <div className="flex justify-end pt-4">
+                <Button
+                  onClick={() => setModalOpen(false)}
+                  className="bg-slate-500 hover:bg-slate-600 text-white"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <ReminderForm
+              recipientId={selectedParentId}
+              onSuccess={handleSuccess}
+              mode={modalMode as "add" | "edit"}
+              reminder={selectedReminder}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </>

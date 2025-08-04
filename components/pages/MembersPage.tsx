@@ -4,12 +4,7 @@
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { 
-  X, 
-  UserPlus, 
-  User,
-  Plus
-} from "lucide-react";
+import { X, UserPlus, User, Plus } from "lucide-react";
 import { addRecipient, getMembers, updateMember } from "@/lib/actions";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -34,9 +29,38 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
+
+// Function to format phone number for display
+const formatPhoneNumber = (phoneNumber: string): string => {
+  // Remove underscores and split by underscores
+  const parts = phoneNumber.split("_");
+
+  if (parts.length >= 3) {
+    // Format: +1_US_1234567890 -> +1 1234567890
+    const countryCode = parts[0];
+    const phoneDigits = parts.slice(2).join("");
+    return `${countryCode} ${phoneDigits}`;
+  } else if (parts.length === 2) {
+    // Format: +1_1234567890 -> +1 1234567890
+    const countryCode = parts[0];
+    const phoneDigits = parts[1];
+    return `${countryCode} ${phoneDigits}`;
+  } else {
+    // Fallback: just replace underscores with spaces
+    return phoneNumber.replace(/_/g, " ");
+  }
+};
+
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  phoneNumber: z.string().min(1, "Phone number is required"),
+  phoneNumber: z
+    .string()
+    .min(1, "Phone number is required")
+    .refine((value) => {
+      // Remove any non-digit characters for validation
+      const digitsOnly = value.replace(/\D/g, "");
+      return digitsOnly.length === 10;
+    }, "Phone number must be exactly 10 digits"),
   countryCode: z.string().min(1, "Country code is required"),
   timezone: z.string().min(1, "Timezone is required"),
 });
@@ -81,13 +105,13 @@ export default function MembersPage() {
 
   useEffect(() => {
     if (selectedMember) {
-      const phoneNumberParts = selectedMember.phone_number.split('_');
-      let countryCode = '+1_US';
-      let phoneNumber = '';
-      
+      const phoneNumberParts = selectedMember.phone_number.split("_");
+      let countryCode = "+1_US";
+      let phoneNumber = "";
+
       if (phoneNumberParts.length >= 2) {
         countryCode = `${phoneNumberParts[0]}_${phoneNumberParts[1]}`;
-        phoneNumber = phoneNumberParts.slice(2).join('_');
+        phoneNumber = phoneNumberParts.slice(2).join("_");
       } else if (phoneNumberParts.length === 1) {
         phoneNumber = phoneNumberParts[0];
       }
@@ -109,9 +133,11 @@ export default function MembersPage() {
       }
 
       const supabase = createClient() as SupabaseClient;
-      
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      
+
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser();
+
       if (!authUser) {
         router.push("/auth/login");
         return;
@@ -120,7 +146,7 @@ export default function MembersPage() {
       setUser(authUser);
 
       const result = await getMembers();
-      
+
       if (result.error) {
         console.error("Error loading members:", result.error);
         toast({
@@ -180,7 +206,7 @@ export default function MembersPage() {
     if (!isSupabaseConfigured) return;
 
     const result = await getMembers();
-    
+
     if (result.error) {
       console.error("Error reloading members:", result.error);
     } else {
@@ -190,7 +216,7 @@ export default function MembersPage() {
   };
 
   const handleRowClick = (parent: any, event: React.MouseEvent) => {
-    if ((event.target as HTMLElement).closest('a')) {
+    if ((event.target as HTMLElement).closest("a")) {
       return;
     }
     setSelectedMember(parent);
@@ -245,7 +271,9 @@ export default function MembersPage() {
   if (loading || !mounted) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-xl font-semibold text-violet-700">Loading members...</h2>
+        <h2 className="text-xl font-semibold text-violet-700">
+          Loading members...
+        </h2>
       </div>
     );
   }
@@ -270,64 +298,76 @@ export default function MembersPage() {
             Add New Member
           </button>
         </div>
-        
+
         {parents && parents.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-200">
-                  <th className="text-left py-3 px-4 font-semibold text-slate-800">Member Name</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-800">Phone Number</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-800">Timezone</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-800">Status</th>
+                  <th className="text-left py-3 px-4 font-semibold text-slate-800">
+                    Member Name
+                  </th>
+                  <th className="text-left py-3 px-4 font-semibold text-slate-800">
+                    Phone Number
+                  </th>
+                  <th className="text-left py-3 px-4 font-semibold text-slate-800">
+                    Timezone
+                  </th>
+                  <th className="text-left py-3 px-4 font-semibold text-slate-800">
+                    Status
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {parents.map((parent: {
-                  id: number;
-                  name: string;
-                  phone_number: string;
-                  timezone: string;
-                }) => (
-                  <tr 
-                    key={parent.id} 
-                    className="border-b border-slate-100 hover:bg-slate-50 cursor-pointer"
-                    onClick={(e) => handleRowClick(parent, e)}
-                  >
-                    <td className="py-3 px-4">
-                      <div className="flex items-center space-x-3">
-                        <Link
-                          href={`/recipients/${parent.id}`}
-                          className="flex items-center space-x-3 font-medium text-violet-600 hover:text-violet-700 hover:underline hover:bg-violet-50 px-2 py-1 rounded transition-colors"
-                          onClick={handleNameClick}
-                        >
-                          <div className="w-8 h-8 bg-violet-100 rounded-full flex items-center justify-center">
-                            <User className="h-4 w-4 text-violet-600" />
-                          </div>
-                          <span>{parent.name}</span>
-                        </Link>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-slate-600">
-                      {parent.phone_number.replace(/_/g, " ")}
-                    </td>
-                    <td className="py-3 px-4 text-slate-600">
-                      {parent.timezone.replace(/_/g, " ")}
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Active
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {parents.map(
+                  (parent: {
+                    id: number;
+                    name: string;
+                    phone_number: string;
+                    timezone: string;
+                  }) => (
+                    <tr
+                      key={parent.id}
+                      className="border-b border-slate-100 hover:bg-slate-50 cursor-pointer"
+                      onClick={(e) => handleRowClick(parent, e)}
+                    >
+                      <td className="py-3 px-4">
+                        <div className="flex items-center space-x-3">
+                          <Link
+                            href={`/recipients/${parent.id}`}
+                            className="flex items-center space-x-3 font-medium text-violet-600 hover:text-violet-700 hover:underline hover:bg-violet-50 px-2 py-1 rounded transition-colors"
+                            onClick={handleNameClick}
+                          >
+                            <div className="w-8 h-8 bg-violet-100 rounded-full flex items-center justify-center">
+                              <User className="h-4 w-4 text-violet-600" />
+                            </div>
+                            <span>{parent.name}</span>
+                          </Link>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-slate-600">
+                        {formatPhoneNumber(parent.phone_number)}
+                      </td>
+                      <td className="py-3 px-4 text-slate-600">
+                        {parent.timezone.replace(/_/g, " ")}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          Active
+                        </span>
+                      </td>
+                    </tr>
+                  )
+                )}
               </tbody>
             </table>
           </div>
         ) : (
           <div className="text-center py-12">
             <User className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-slate-800 mb-2">No members added yet</h3>
+            <h3 className="text-lg font-semibold text-slate-800 mb-2">
+              No members added yet
+            </h3>
             <p className="text-slate-600 mb-6">
               Add your first care recipient to start managing their care
             </p>
@@ -348,7 +388,9 @@ export default function MembersPage() {
           <div className="bg-white rounded-2xl shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-slate-800">Add New Member</h3>
+                <h3 className="text-xl font-bold text-slate-800">
+                  Add New Member
+                </h3>
                 <button
                   onClick={() => setIsModalOpen(false)}
                   className="text-slate-400 hover:text-slate-600"
@@ -358,7 +400,10 @@ export default function MembersPage() {
               </div>
 
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                <form
+                  onSubmit={form.handleSubmit(handleSubmit)}
+                  className="space-y-4"
+                >
                   {/* Name Field */}
                   <FormField
                     control={form.control}
@@ -397,21 +442,51 @@ export default function MembersPage() {
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent className="h-[300px]">
-                                    <SelectItem value="+1_US">+1 [US]</SelectItem>
-                                    <SelectItem value="+1_CA">+1 [CA]</SelectItem>
-                                    <SelectItem value="+44">+44 [UK]</SelectItem>
-                                    <SelectItem value="+33">+33 [FR]</SelectItem>
-                                    <SelectItem value="+49">+49 [DE]</SelectItem>
-                                    <SelectItem value="+39">+39 [IT]</SelectItem>
-                                    <SelectItem value="+34">+34 [ES]</SelectItem>
-                                    <SelectItem value="+81">+81 [JP]</SelectItem>
-                                    <SelectItem value="+86">+86 [CN]</SelectItem>
-                                    <SelectItem value="+91">+91 [IN]</SelectItem>
-                                    <SelectItem value="+61">+61 [AU]</SelectItem>
-                                    <SelectItem value="+55">+55 [BR]</SelectItem>
-                                    <SelectItem value="+52">+52 [MX]</SelectItem>
-                                    <SelectItem value="+7_RU">+7 [RU]</SelectItem>
-                                    <SelectItem value="+82">+82 [KR]</SelectItem>
+                                    <SelectItem value="+1_US">
+                                      +1 [US]
+                                    </SelectItem>
+                                    <SelectItem value="+1_CA">
+                                      +1 [CA]
+                                    </SelectItem>
+                                    <SelectItem value="+44">
+                                      +44 [UK]
+                                    </SelectItem>
+                                    <SelectItem value="+33">
+                                      +33 [FR]
+                                    </SelectItem>
+                                    <SelectItem value="+49">
+                                      +49 [DE]
+                                    </SelectItem>
+                                    <SelectItem value="+39">
+                                      +39 [IT]
+                                    </SelectItem>
+                                    <SelectItem value="+34">
+                                      +34 [ES]
+                                    </SelectItem>
+                                    <SelectItem value="+81">
+                                      +81 [JP]
+                                    </SelectItem>
+                                    <SelectItem value="+86">
+                                      +86 [CN]
+                                    </SelectItem>
+                                    <SelectItem value="+91">
+                                      +91 [IN]
+                                    </SelectItem>
+                                    <SelectItem value="+61">
+                                      +61 [AU]
+                                    </SelectItem>
+                                    <SelectItem value="+55">
+                                      +55 [BR]
+                                    </SelectItem>
+                                    <SelectItem value="+52">
+                                      +52 [MX]
+                                    </SelectItem>
+                                    <SelectItem value="+7_RU">
+                                      +7 [RU]
+                                    </SelectItem>
+                                    <SelectItem value="+82">
+                                      +82 [KR]
+                                    </SelectItem>
                                   </SelectContent>
                                 </Select>
                               )}
@@ -439,33 +514,76 @@ export default function MembersPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Timezone</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select timezone" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent className="h-[300px]">
-                            <SelectItem value="America/New_York">Eastern Time (ET)</SelectItem>
-                            <SelectItem value="America/Chicago">Central Time (CT)</SelectItem>
-                            <SelectItem value="America/Denver">Mountain Time (MT)</SelectItem>
-                            <SelectItem value="America/Los_Angeles">Pacific Time (PT)</SelectItem>
-                            <SelectItem value="America/Anchorage">Alaska Time (AKT)</SelectItem>
-                            <SelectItem value="Pacific/Honolulu">Hawaii Time (HT)</SelectItem>
-                            <SelectItem value="UTC">UTC (Coordinated Universal Time)</SelectItem>
-                            <SelectItem value="Europe/London">United Kingdom (GMT/BST)</SelectItem>
-                            <SelectItem value="Europe/Paris">France (CET)</SelectItem>
-                            <SelectItem value="Europe/Berlin">Germany (CET)</SelectItem>
-                            <SelectItem value="Europe/Rome">Italy (CET)</SelectItem>
-                            <SelectItem value="Europe/Madrid">Spain (CET)</SelectItem>
-                            <SelectItem value="Asia/Tokyo">Japan (JST)</SelectItem>
-                            <SelectItem value="Asia/Shanghai">China (CST)</SelectItem>
-                            <SelectItem value="Asia/Kolkata">India (IST)</SelectItem>
-                            <SelectItem value="Australia/Sydney">Australia - Sydney (AEST/AEDT)</SelectItem>
-                            <SelectItem value="America/Sao_Paulo">Brazil - São Paulo (BRT)</SelectItem>
-                            <SelectItem value="America/Mexico_City">Mexico (CST)</SelectItem>
-                            <SelectItem value="Europe/Moscow">Russia - Moscow (MSK)</SelectItem>
-                            <SelectItem value="Asia/Seoul">Korea (KST)</SelectItem>
+                            <SelectItem value="America/New_York">
+                              Eastern Time (ET)
+                            </SelectItem>
+                            <SelectItem value="America/Chicago">
+                              Central Time (CT)
+                            </SelectItem>
+                            <SelectItem value="America/Denver">
+                              Mountain Time (MT)
+                            </SelectItem>
+                            <SelectItem value="America/Los_Angeles">
+                              Pacific Time (PT)
+                            </SelectItem>
+                            <SelectItem value="America/Anchorage">
+                              Alaska Time (AKT)
+                            </SelectItem>
+                            <SelectItem value="Pacific/Honolulu">
+                              Hawaii Time (HT)
+                            </SelectItem>
+                            <SelectItem value="UTC">
+                              UTC (Coordinated Universal Time)
+                            </SelectItem>
+                            <SelectItem value="Europe/London">
+                              United Kingdom (GMT/BST)
+                            </SelectItem>
+                            <SelectItem value="Europe/Paris">
+                              France (CET)
+                            </SelectItem>
+                            <SelectItem value="Europe/Berlin">
+                              Germany (CET)
+                            </SelectItem>
+                            <SelectItem value="Europe/Rome">
+                              Italy (CET)
+                            </SelectItem>
+                            <SelectItem value="Europe/Madrid">
+                              Spain (CET)
+                            </SelectItem>
+                            <SelectItem value="Asia/Tokyo">
+                              Japan (JST)
+                            </SelectItem>
+                            <SelectItem value="Asia/Shanghai">
+                              China (CST)
+                            </SelectItem>
+                            <SelectItem value="Asia/Kolkata">
+                              India (IST)
+                            </SelectItem>
+                            <SelectItem value="Australia/Sydney">
+                              Australia - Sydney (AEST/AEDT)
+                            </SelectItem>
+                            <SelectItem value="America/Sao_Paulo">
+                              Brazil - São Paulo (BRT)
+                            </SelectItem>
+                            <SelectItem value="America/Mexico_City">
+                              Mexico (CST)
+                            </SelectItem>
+                            <SelectItem value="Europe/Moscow">
+                              Russia - Moscow (MSK)
+                            </SelectItem>
+                            <SelectItem value="Asia/Seoul">
+                              Korea (KST)
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -505,7 +623,9 @@ export default function MembersPage() {
           <div className="bg-white rounded-2xl shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-slate-800">Edit Member Details</h3>
+                <h3 className="text-xl font-bold text-slate-800">
+                  Edit Member Details
+                </h3>
                 <button
                   onClick={() => {
                     setIsEditModalOpen(false);
@@ -518,7 +638,10 @@ export default function MembersPage() {
               </div>
 
               <Form {...editForm}>
-                <form onSubmit={editForm.handleSubmit(handleEditSubmit)} className="space-y-4">
+                <form
+                  onSubmit={editForm.handleSubmit(handleEditSubmit)}
+                  className="space-y-4"
+                >
                   {/* Name Field */}
                   <FormField
                     control={editForm.control}
@@ -557,21 +680,51 @@ export default function MembersPage() {
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent className="h-[300px]">
-                                    <SelectItem value="+1_US">+1 [US]</SelectItem>
-                                    <SelectItem value="+1_CA">+1 [CA]</SelectItem>
-                                    <SelectItem value="+44">+44 [UK]</SelectItem>
-                                    <SelectItem value="+33">+33 [FR]</SelectItem>
-                                    <SelectItem value="+49">+49 [DE]</SelectItem>
-                                    <SelectItem value="+39">+39 [IT]</SelectItem>
-                                    <SelectItem value="+34">+34 [ES]</SelectItem>
-                                    <SelectItem value="+81">+81 [JP]</SelectItem>
-                                    <SelectItem value="+86">+86 [CN]</SelectItem>
-                                    <SelectItem value="+91">+91 [IN]</SelectItem>
-                                    <SelectItem value="+61">+61 [AU]</SelectItem>
-                                    <SelectItem value="+55">+55 [BR]</SelectItem>
-                                    <SelectItem value="+52">+52 [MX]</SelectItem>
-                                    <SelectItem value="+7_RU">+7 [RU]</SelectItem>
-                                    <SelectItem value="+82">+82 [KR]</SelectItem>
+                                    <SelectItem value="+1_US">
+                                      +1 [US]
+                                    </SelectItem>
+                                    <SelectItem value="+1_CA">
+                                      +1 [CA]
+                                    </SelectItem>
+                                    <SelectItem value="+44">
+                                      +44 [UK]
+                                    </SelectItem>
+                                    <SelectItem value="+33">
+                                      +33 [FR]
+                                    </SelectItem>
+                                    <SelectItem value="+49">
+                                      +49 [DE]
+                                    </SelectItem>
+                                    <SelectItem value="+39">
+                                      +39 [IT]
+                                    </SelectItem>
+                                    <SelectItem value="+34">
+                                      +34 [ES]
+                                    </SelectItem>
+                                    <SelectItem value="+81">
+                                      +81 [JP]
+                                    </SelectItem>
+                                    <SelectItem value="+86">
+                                      +86 [CN]
+                                    </SelectItem>
+                                    <SelectItem value="+91">
+                                      +91 [IN]
+                                    </SelectItem>
+                                    <SelectItem value="+61">
+                                      +61 [AU]
+                                    </SelectItem>
+                                    <SelectItem value="+55">
+                                      +55 [BR]
+                                    </SelectItem>
+                                    <SelectItem value="+52">
+                                      +52 [MX]
+                                    </SelectItem>
+                                    <SelectItem value="+7_RU">
+                                      +7 [RU]
+                                    </SelectItem>
+                                    <SelectItem value="+82">
+                                      +82 [KR]
+                                    </SelectItem>
                                   </SelectContent>
                                 </Select>
                               )}
@@ -599,33 +752,76 @@ export default function MembersPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Timezone</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select timezone" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent className="h-[300px]">
-                            <SelectItem value="America/New_York">Eastern Time (ET)</SelectItem>
-                            <SelectItem value="America/Chicago">Central Time (CT)</SelectItem>
-                            <SelectItem value="America/Denver">Mountain Time (MT)</SelectItem>
-                            <SelectItem value="America/Los_Angeles">Pacific Time (PT)</SelectItem>
-                            <SelectItem value="America/Anchorage">Alaska Time (AKT)</SelectItem>
-                            <SelectItem value="Pacific/Honolulu">Hawaii Time (HT)</SelectItem>
-                            <SelectItem value="UTC">UTC (Coordinated Universal Time)</SelectItem>
-                            <SelectItem value="Europe/London">United Kingdom (GMT/BST)</SelectItem>
-                            <SelectItem value="Europe/Paris">France (CET)</SelectItem>
-                            <SelectItem value="Europe/Berlin">Germany (CET)</SelectItem>
-                            <SelectItem value="Europe/Rome">Italy (CET)</SelectItem>
-                            <SelectItem value="Europe/Madrid">Spain (CET)</SelectItem>
-                            <SelectItem value="Asia/Tokyo">Japan (JST)</SelectItem>
-                            <SelectItem value="Asia/Shanghai">China (CST)</SelectItem>
-                            <SelectItem value="Asia/Kolkata">India (IST)</SelectItem>
-                            <SelectItem value="Australia/Sydney">Australia - Sydney (AEST/AEDT)</SelectItem>
-                            <SelectItem value="America/Sao_Paulo">Brazil - São Paulo (BRT)</SelectItem>
-                            <SelectItem value="America/Mexico_City">Mexico (CST)</SelectItem>
-                            <SelectItem value="Europe/Moscow">Russia - Moscow (MSK)</SelectItem>
-                            <SelectItem value="Asia/Seoul">Korea (KST)</SelectItem>
+                            <SelectItem value="America/New_York">
+                              Eastern Time (ET)
+                            </SelectItem>
+                            <SelectItem value="America/Chicago">
+                              Central Time (CT)
+                            </SelectItem>
+                            <SelectItem value="America/Denver">
+                              Mountain Time (MT)
+                            </SelectItem>
+                            <SelectItem value="America/Los_Angeles">
+                              Pacific Time (PT)
+                            </SelectItem>
+                            <SelectItem value="America/Anchorage">
+                              Alaska Time (AKT)
+                            </SelectItem>
+                            <SelectItem value="Pacific/Honolulu">
+                              Hawaii Time (HT)
+                            </SelectItem>
+                            <SelectItem value="UTC">
+                              UTC (Coordinated Universal Time)
+                            </SelectItem>
+                            <SelectItem value="Europe/London">
+                              United Kingdom (GMT/BST)
+                            </SelectItem>
+                            <SelectItem value="Europe/Paris">
+                              France (CET)
+                            </SelectItem>
+                            <SelectItem value="Europe/Berlin">
+                              Germany (CET)
+                            </SelectItem>
+                            <SelectItem value="Europe/Rome">
+                              Italy (CET)
+                            </SelectItem>
+                            <SelectItem value="Europe/Madrid">
+                              Spain (CET)
+                            </SelectItem>
+                            <SelectItem value="Asia/Tokyo">
+                              Japan (JST)
+                            </SelectItem>
+                            <SelectItem value="Asia/Shanghai">
+                              China (CST)
+                            </SelectItem>
+                            <SelectItem value="Asia/Kolkata">
+                              India (IST)
+                            </SelectItem>
+                            <SelectItem value="Australia/Sydney">
+                              Australia - Sydney (AEST/AEDT)
+                            </SelectItem>
+                            <SelectItem value="America/Sao_Paulo">
+                              Brazil - São Paulo (BRT)
+                            </SelectItem>
+                            <SelectItem value="America/Mexico_City">
+                              Mexico (CST)
+                            </SelectItem>
+                            <SelectItem value="Europe/Moscow">
+                              Russia - Moscow (MSK)
+                            </SelectItem>
+                            <SelectItem value="Asia/Seoul">
+                              Korea (KST)
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
