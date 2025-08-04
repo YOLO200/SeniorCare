@@ -83,3 +83,277 @@
     box-sizing: border-box;
   }
 }
+
+/* FullCalendar Styles - Apple Calendar Inspired */
+.fc {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: transparent;
+  border-radius: 12px;
+  overflow: visible;
+  margin-bottom: 20px;
+}
+
+/* Toolbar Styling */
+.fc-toolbar {
+  background-color: white;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e5e7;
+  margin-bottom: 0;
+}
+
+.fc-toolbar-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #1d1d1f;
+  letter-spacing: -0.5px;
+}
+
+.fc-button {
+  background-color: #8b5cf6 !important;
+  border: none !important;
+  color: white !important;
+  padding: 8px 16px !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  transition: all 0.2s ease !important;
+  box-shadow: none !important;
+}
+
+.fc-button:hover {
+  background-color: #7c3aed !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3) !important;
+}
+
+.fc-button:focus {
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2) !important;
+}
+
+.fc-button:disabled {
+  background-color: #d1d1d6 !important;
+  color: #8e8e93 !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.fc-button-group {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.fc-button-group .fc-button {
+  border-radius: 0 !important;
+  margin: 0 !important;
+}
+
+.fc-button-group .fc-button:first-child {
+  border-top-left-radius: 8px !important;
+  border-bottom-left-radius: 8px !important;
+}
+
+.fc-button-group .fc-button:last-child {
+  border-top-right-radius: 8px !important;
+  border-bottom-right-radius: 8px !important;
+}
+
+/* Calendar Grid */
+.fc-view-harness {
+  background-color: white;
+}
+
+.fc-daygrid-day {
+  background-color: white;
+  border: 1px solid #e5e5e7;
+  transition: background-color 0.2s ease;
+  min-height: 120px;
+}
+
+.fc-daygrid-day-frame {
+  min-height: 120px;
+}
+
+.fc-daygrid-day-events {
+  min-height: 80px;
+}
+
+.fc-daygrid-day:hover {
+  background-color: #f2f2f7;
+}
+
+.fc-daygrid-day.fc-day-today {
+  background-color: #f0f8ff;
+}
+
+.fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
+  background-color: #8b5cf6;
+  color: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+.fc-daygrid-day.fc-day-other {
+  background-color: #fafafa;
+}
+
+.fc-daygrid-day.fc-day-other .fc-daygrid-day-number {
+  color: #8e8e93;
+}
+
+/* Header Cells */
+.fc-col-header-cell {
+  background-color: #f9f9f9;
+  border: 1px solid #e5e5e7;
+  padding: 12px 0;
+}
+
+.fc-col-header-cell-cushion {
+  color: #1d1d1f;
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Day Numbers */
+.fc-daygrid-day-number {
+  color: #1d1d1f;
+  font-weight: 500;
+  font-size: 15px;
+  padding: 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.fc-daygrid-day-number:hover {
+  background-color: #f2f2f7;
+}
+
+/* Events */
+.fc-event {
+  border-radius: 6px !important;
+  border: none !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  padding: 4px 8px !important;
+  cursor: pointer !important;
+  margin: 1px 2px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  transition: all 0.2s ease !important;
+}
+
+.fc-event:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Past events styling */
+.fc-event.fc-event-past {
+  opacity: 0.6 !important;
+  filter: grayscale(0.3) !important;
+}
+
+.fc-event.fc-event-past:hover {
+  opacity: 0.8 !important;
+  filter: grayscale(0.1) !important;
+}
+
+.fc-event-main {
+  color: white !important;
+  font-weight: 500 !important;
+}
+
+/* Event Colors - Specific Pastel Theme */
+.fc-event[style*="background-color: rgb(135, 206, 235)"] {
+  background-color: #87ceeb !important;
+  color: #1e40af !important;
+}
+
+.fc-event[style*="background-color: rgb(255, 182, 193)"] {
+  background-color: #ffb6c1 !important;
+  color: #be185d !important;
+}
+
+.fc-event[style*="background-color: rgb(216, 191, 216)"] {
+  background-color: #d8bfd8 !important;
+  color: #7c3aed !important;
+}
+
+.fc-event[style*="background-color: rgb(255, 218, 185)"] {
+  background-color: #ffdab9 !important;
+  color: #ea580c !important;
+}
+
+.fc-event[style*="background-color: rgb(152, 251, 152)"] {
+  background-color: #98fb98 !important;
+  color: #166534 !important;
+}
+
+/* Week View */
+.fc-timegrid-slot {
+  background-color: white;
+  border-bottom: 1px solid #f2f2f7;
+}
+
+.fc-timegrid-slot-label {
+  color: #8e8e93;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.fc-timegrid-axis {
+  background-color: #f9f9f9;
+  border-right: 1px solid #e5e5e7;
+}
+
+/* More Events Link */
+.fc-daygrid-more-link {
+  color: #8b5cf6 !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  text-decoration: none !important;
+}
+
+.fc-daygrid-more-link:hover {
+  text-decoration: underline !important;
+}
+
+/* Popover */
+.fc-popover {
+  border-radius: 12px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12) !important;
+  border: 1px solid #e5e5e7 !important;
+}
+
+.fc-popover-header {
+  background-color: #f9f9f9 !important;
+  border-bottom: 1px solid #e5e5e7 !important;
+  padding: 12px 16px !important;
+}
+
+.fc-popover-title {
+  color: #1d1d1f !important;
+  font-weight: 600 !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .fc-toolbar {
+    padding: 12px 16px;
+  }
+
+  .fc-toolbar-title {
+    font-size: 24px;
+  }
+
+  .fc-button {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+}
